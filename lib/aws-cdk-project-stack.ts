@@ -4,7 +4,7 @@ import { Duration, RemovalPolicy, StackProps } from 'aws-cdk-lib';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
-import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
+import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { SfnStateMachine } from 'aws-cdk-lib/aws-events-targets';
 import { Choice, Condition, Fail, StateMachine, Succeed, TaskInput } from 'aws-cdk-lib/aws-stepfunctions';
 import { LambdaInvoke } from 'aws-cdk-lib/aws-stepfunctions-tasks';
@@ -60,6 +60,14 @@ export class AwsCdkProjectStack extends cdk.Stack {
       }),
     );
 
+    // Create Lambda Layer from the ZIP file in S3, which includes the requests library
+    const lambdaLayer = new LayerVersion(this, 'RequestsLayer', {
+      code: Code.fromBucket(Bucket.fromBucketName(this, 'LayerBucket', 'cdk-project-lambda-layer-zip-files'), 'requests_layer.zip'),
+      compatibleRuntimes: [Runtime.PYTHON_3_12],
+      description: 'A layer to include requests library',
+    });
+
+
     // Create Lambda function
     const lambdaFunction = new Function(this, 'LambdaFunction', {
       runtime: Runtime.PYTHON_3_9,
@@ -97,6 +105,7 @@ def lambda_handler(event, context):
       logRetention: RetentionDays.ONE_MONTH,
       memorySize: 1024,
       timeout: Duration.minutes(15),
+      layers: [lambdaLayer], // Attach the Lambda Layer
     });
 
     // Create SES Lambda function
