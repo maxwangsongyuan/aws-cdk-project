@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Duration, RemovalPolicy, StackProps } from 'aws-cdk-lib';
-import { Bucket }1 from 'aws-cdk-lib/aws-s3';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
@@ -21,17 +21,6 @@ export class AwsCdkProjectStack extends cdk.Stack {
     // Generate the current date and time
     const now = new Date();
     const dateString = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-
-//     // Define the bucket name
-//     const bucketName = `lambda-output-bucket-${account}-${region}`;
-//
-//     // Define the S3 bucket
-//     const bucket = new Bucket(this, 'LambdaOutputBucket', {
-//       bucketName: bucketName,
-//       versioned: true,
-//       removalPolicy: RemovalPolicy.RETAIN, // Automatically delete the bucket when the stack is deleted
-//       autoDeleteObjects: false, // Automatically delete all objects in the bucket when the stack is deleted
-//     });
 
     // Create IAM Role for Lambda
     const lambdaRole = new Role(this, `LambdaExecutionRole`, {
@@ -71,48 +60,11 @@ export class AwsCdkProjectStack extends cdk.Stack {
     });
 
     // Create Lambda function
-    const lambdaFunction = new Function(this, 'LambdaFunction', {
+    const lambdaFunction = new Function(this, 'LeetCodeLambdaFunction', {
       runtime: Runtime.PYTHON_3_12,
-      description: 'lambda function',
-      handler: 'index.lambda_handler',
-      code: Code.fromInline(
-      `
-import json
-import requests
-
-def lambda_handler(event, context):
-    # Define the base URL for the API
-    base_url = "https://alfa-leetcode-api.onrender.com"
-
-    # Specify the LeetCode username
-    username = "maxwsy"
-
-    # Make a request to fetch user statistics (latest 10 submissions)
-    submission_response = requests.get(f"{base_url}/{username}/acSubmission?limit=10")
-
-    # Make a request to fetch solved question summary
-    solved_response = requests.get(f"{base_url}/{username}/solved")
-
-    # Check if both requests were successful
-    if submission_response.status_code == 200 and solved_response.status_code == 200:
-        submission_stats = submission_response.json()
-        solved_stats = solved_response.json()
-
-        combined_stats = {
-            'solvedSummary': solved_stats,
-            'latestSubmissions': submission_stats
-        }
-
-        return {
-            'statusCode': 200,
-            'body': json.dumps(combined_stats)
-        }
-    else:
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': 'Failed to fetch statistics'})
-        }
-      `),
+      description: 'leetCode progress retrieval lambda function',
+      handler: 'leetcode_progress_retrieval_lambda_function.lambda_handler',
+      code: Code.fromAsset('lambda'),
       role: lambdaRole,
       logRetention: RetentionDays.ONE_MONTH,
       memorySize: 1024,
@@ -123,106 +75,9 @@ def lambda_handler(event, context):
     // Create SES Lambda function
     const sesLambdaFunction = new Function(this, 'SesLambdaFunction', {
       runtime: Runtime.PYTHON_3_12,
-      description: 'SES lambda function',
-      handler: 'index.handler',
-      code: Code.fromInline(
-      `
-import boto3
-import json
-import os
-
-def handler(event, context):
-    ses = boto3.client('ses')
-    subject = "Leetcode Status Report on " + event['yearDateMonth']
-
-    try:
-        # Access the lambda_output from the event directly
-        lambda_output = event['lambda_output']['value']
-        stats = json.loads(lambda_output['body'])
-
-        # Format the email body as an HTML table
-        html_body = f"""
-        <html>
-        <body>
-            <h2>Leetcode Status Report</h2>
-            <h3>Solved Summary</h3>
-            <table border="1" style="border-collapse: collapse;">
-                <tr>
-                    <th>Difficulty</th>
-                    <th>Solved</th>
-                    <th>Submissions</th>
-                </tr>
-        """
-
-        for difficulty in stats['solvedSummary']['acSubmissionNum']:
-            corresponding_total = next((item for item in stats['solvedSummary']['totalSubmissionNum'] if item['difficulty'] == difficulty['difficulty']), None)
-            if corresponding_total:
-                html_body += f"""
-                <tr>
-                    <td>{difficulty['difficulty']}</td>
-                    <td>{difficulty['count']}</td>
-                    <td>{corresponding_total['submissions']}</td>
-                </tr>
-                """
-
-        html_body += """
-            </table>
-            <h3>Latest Submissions</h3>
-            <table border="1" style="border-collapse: collapse;">
-                <tr>
-                    <th>Title</th>
-                    <th>Status</th>
-                    <th>Language</th>
-                    <th>Timestamp</th>
-                </tr>
-        """
-
-        for submission in stats['latestSubmissions']['submission']:
-            html_body += f"""
-                <tr>
-                    <td>{submission['title']}</td>
-                    <td>{submission['statusDisplay']}</td>
-                    <td>{submission['lang']}</td>
-                    <td>{submission['timestamp']}</td>
-                </tr>
-            """
-
-        html_body += """
-            </table>
-        </body>
-        </html>
-        """
-
-        # Send the email
-        response = ses.send_email(
-            Source=os.environ['SES_SOURCE_EMAIL'],
-            Destination={
-                'ToAddresses': [os.environ['SES_DESTINATION_EMAIL']],
-            },
-            Message={
-                'Subject': {
-                    'Data': subject
-                },
-                'Body': {
-                    'Html': {
-                        'Data': html_body
-                    }
-                }
-            }
-        )
-
-        # Return statement to indicate success
-        return {
-            'statusCode': 200,
-            'body': {'message': 'Email sent successfully'}
-        }
-    except Exception as e:
-        # Return statement to indicate failure
-        return {
-            'statusCode': 500,
-            'body': {'message': 'Failed to send email', 'error': str(e)}
-        }
-      `),
+      description: 'SES email notification lambda function',
+      handler: 'email_notification_lambda_function.handler',
+      code: Code.fromAsset('lambda'),
       role: lambdaRole,
       logRetention: RetentionDays.ONE_MONTH,
       memorySize: 1024,
