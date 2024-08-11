@@ -8,14 +8,14 @@ export class AwsCdkProjectStack extends cdk.Stack {
 
     // Define the S3 bucket
     new s3.Bucket(this, 'MyBucket', {
-      bucketName: 'my-unique-bucket-name-864899851256',
+      bucketName: 'my-unique-bucket-name-7864899851256',
       versioned: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Automatically delete the bucket when the stack is deleted
       autoDeleteObjects: true, // Automatically delete all objects in the bucket when the stack is deleted
     });
 
     new s3.Bucket(this, 'MyBucket2', {
-      bucketName: 'test-github-action-1sdadsad4a54das',
+      bucketName: 'test-github-action-71sdadsad4a54das',
       versioned: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Automatically delete the bucket when the stack is deleted
       autoDeleteObjects: true, // Automatically delete all objects in the bucket when the stack is deleted

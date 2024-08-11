@@ -35,7 +35,7 @@ jobs:
           aws-region: ${{ matrix.region }}
 
       - name: Bootstrap CDK environment
-        run: npx cdk bootstrap aws://YOUR_AWS_ACCOUNT_ID/${{ matrix.region }}
+        run: npx cdk bootstrap aws://864899851256/${{ matrix.region }}
 
       - name: Deploy CDK stack
         run: npx cdk deploy --require-approval never
