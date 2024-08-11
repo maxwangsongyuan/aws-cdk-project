@@ -17,11 +17,11 @@ export class AwsCdkProjectStack extends cdk.Stack {
     // Create a unique bucket name using account ID, region, and date-time
     const account = cdk.Stack.of(this).account;
     const region = cdk.Stack.of(this).region;
-//
-//     // Generate the current date and time
-//     const now = new Date();
-//     const dateString = now.toISOString().replace(/[:\-]/g, '').replace(/\..+/, '').toLowerCase();
-//
+
+    // Generate the current date and time
+    const now = new Date();
+    const dateString = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
 //     // Define the bucket name
 //     const bucketName = `lambda-output-bucket-${account}-${region}`;
 //
@@ -119,7 +119,7 @@ def lambda_handler(event, context):
 
         def handler(event, context):
             ses = boto3.client('ses')
-            subject = "Leetcode Status Report on " + event['year-date-month']
+            subject = "Leetcode Status Report on " + event['yearDateMonth']
             body = event['lambda_output']
 
             response = ses.send_email(
@@ -158,7 +158,9 @@ def lambda_handler(event, context):
     // Create Step Function and define the Lambda invocation state using dynamic input parameters
     const lambdaInvoke = new LambdaInvoke(this, 'InvokeLambdaStep', {
       lambdaFunction,
-      payload: TaskInput.fromObject({}),
+      payload: TaskInput.fromObject({
+        'yearDateMonth': dateString
+      }),
       outputPath: '$.Payload',
     });
 
@@ -167,7 +169,7 @@ def lambda_handler(event, context):
       lambdaFunction: sesLambdaFunction,
       payload: TaskInput.fromObject({
         'lambda_output': TaskInput.fromJsonPathAt('$'),
-        'year-date-month': TaskInput.fromJsonPathAt('$.year-date-month')
+        'yearDateMonth': dateString
       }),
       outputPath: '$.Payload',
     });
@@ -181,10 +183,11 @@ def lambda_handler(event, context):
       error: 'Invoke error or Query error',
     });
 
-    // Decision state to check the result of the Lambda function
+    // Decision state to check the result of the initial Lambda function
     const decisionState = new Choice(this, 'DecisionState')
-      .when(Condition.numberEquals('$.statusCode', 200), sesLambdaInvoke.next(successState))
+      .when(Condition.numberEquals('$.statusCode', 200), sesLambdaInvoke.addCatch(failureState).next(successState))
       .otherwise(failureState);
+
 
     // Define the workflow with error handling
     const definition = lambdaInvoke.addCatch(failureState, { resultPath: '$.error-info' }).next(decisionState);
