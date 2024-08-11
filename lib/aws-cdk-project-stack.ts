@@ -82,24 +82,34 @@ import requests
 
 def lambda_handler(event, context):
     # Define the base URL for the API
-    base_url = "https://leetcode-stats-api.herokuapp.com"
+    base_url = "https://alfa-leetcode-api.onrender.com"
 
     # Specify the LeetCode username
     username = "maxwsy"
 
-    # Make a request to fetch user statistics
-    response = requests.get(f"{base_url}/{username}")
+    # Make a request to fetch user statistics (latest 3 submissions)
+    submission_response = requests.get(f"{base_url}/{username}/acSubmission?limit=10")
 
-    # Check if the request was successful
-    if response.status_code == 200:
-        stats = response.json()
+    # Make a request to fetch solved question summary
+    solved_response = requests.get(f"{base_url}/{username}/solved")
+
+    # Check if both requests were successful
+    if submission_response.status_code == 200 and solved_response.status_code == 200:
+        submission_stats = submission_response.json()
+        solved_stats = solved_response.json()
+
+        combined_stats = {
+            'solvedSummary': solved_stats,
+            'latestSubmissions': submission_stats
+        }
+
         return {
             'statusCode': 200,
-            'body': json.dumps(stats)
+            'body': json.dumps(combined_stats)
         }
     else:
         return {
-            'statusCode': response.status_code,
+            'statusCode': 500,
             'body': json.dumps({'error': 'Failed to fetch statistics'})
         }
       `),
@@ -124,29 +134,94 @@ import os
 def handler(event, context):
     ses = boto3.client('ses')
     subject = "Leetcode Status Report on " + event['yearDateMonth']
-    body = json.dumps(event['lambda_output'], indent=2)  # Ensure the body is a string
 
-    response = ses.send_email(
-        Source=os.environ['SES_SOURCE_EMAIL'],
-        Destination={
-            'ToAddresses': [os.environ['SES_DESTINATION_EMAIL']],
-        },
-        Message={
-            'Subject': {
-                'Data': subject
+    try:
+        # Access the lambda_output from the event directly
+        lambda_output = event['lambda_output']
+        stats = json.loads(lambda_output['body'])
+
+        # Format the email body as an HTML table
+        html_body = f"""
+        <html>
+        <body>
+            <h2>Leetcode Status Report</h2>
+            <h3>Solved Summary</h3>
+            <table border="1" style="border-collapse: collapse;">
+                <tr>
+                    <th>Difficulty</th>
+                    <th>Solved</th>
+                    <th>Submissions</th>
+                </tr>
+        """
+
+        for difficulty in stats['solvedSummary']['acSubmissionNum']:
+            corresponding_total = next((item for item in stats['solvedSummary']['totalSubmissionNum'] if item['difficulty'] == difficulty['difficulty']), None)
+            if corresponding_total:
+                html_body += f"""
+                <tr>
+                    <td>{difficulty['difficulty']}</td>
+                    <td>{difficulty['count']}</td>
+                    <td>{corresponding_total['submissions']}</td>
+                </tr>
+                """
+
+        html_body += """
+            </table>
+            <h3>Latest Submissions</h3>
+            <table border="1" style="border-collapse: collapse;">
+                <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Language</th>
+                    <th>Timestamp</th>
+                </tr>
+        """
+
+        for submission in stats['latestSubmissions']['submission']:
+            html_body += f"""
+                <tr>
+                    <td>{submission['title']}</td>
+                    <td>{submission['statusDisplay']}</td>
+                    <td>{submission['lang']}</td>
+                    <td>{submission['timestamp']}</td>
+                </tr>
+            """
+
+        html_body += """
+            </table>
+        </body>
+        </html>
+        """
+
+        # Send the email
+        response = ses.send_email(
+            Source=os.environ['SES_SOURCE_EMAIL'],
+            Destination={
+                'ToAddresses': [os.environ['SES_DESTINATION_EMAIL']],
             },
-            'Body': {
-                'Text': {
-                    'Data': body
+            Message={
+                'Subject': {
+                    'Data': subject
+                },
+                'Body': {
+                    'Html': {
+                        'Data': html_body
+                    }
                 }
             }
-        }
-    )
+        )
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps(response)
-    }
+        # Return statement to indicate success
+        return {
+            'statusCode': 200,
+            'body': {'message': 'Email sent successfully'}
+        }
+    except Exception as e:
+        # Return statement to indicate failure
+        return {
+            'statusCode': 500,
+            'body': {'message': 'Failed to send email', 'error': str(e)}
+        }
       `),
       role: lambdaRole,
       logRetention: RetentionDays.ONE_MONTH,
