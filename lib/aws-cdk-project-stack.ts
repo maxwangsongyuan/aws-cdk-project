@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Duration, RemovalPolicy, StackProps } from 'aws-cdk-lib';
-import { Bucket } from 'aws-cdk-lib/aws-s3';
+import { Bucket }1 from 'aws-cdk-lib/aws-s3';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
@@ -87,7 +87,7 @@ def lambda_handler(event, context):
     # Specify the LeetCode username
     username = "maxwsy"
 
-    # Make a request to fetch user statistics (latest 3 submissions)
+    # Make a request to fetch user statistics (latest 10 submissions)
     submission_response = requests.get(f"{base_url}/{username}/acSubmission?limit=10")
 
     # Make a request to fetch solved question summary
@@ -137,7 +137,7 @@ def handler(event, context):
 
     try:
         # Access the lambda_output from the event directly
-        lambda_output = event['lambda_output']
+        lambda_output = event['lambda_output']['value']
         stats = json.loads(lambda_output['body'])
 
         # Format the email body as an HTML table
