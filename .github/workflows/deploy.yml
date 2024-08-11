@@ -6,11 +6,11 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy-gamma:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        region: ['us-west-2', 'us-west-1']
+        region: ['us-west-2']
 
     steps:
       - name: Checkout code
@@ -27,15 +27,50 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials for Gamma
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_GAMMA }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_GAMMA }}
           aws-region: ${{ matrix.region }}
 
-      - name: Bootstrap CDK environment
+      - name: Bootstrap CDK environment for Gamma
         run: npx cdk bootstrap aws://864899851256/${{ matrix.region }}
 
-      - name: Deploy CDK stack
-        run: npx cdk deploy --require-approval never
+      - name: Deploy CDK stack to Gamma
+        run: npx cdk deploy --require-approval never --context env=gamma
+
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: deploy-gamma
+    strategy:
+      matrix:
+        region: ['us-west-1', 'us-east-2']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Configure AWS credentials for Prod
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ matrix.region }}
+
+      - name: Bootstrap CDK environment for Prod
+        run: npx cdk bootstrap aws://864899851256/${{ matrix.region }}
+
+      - name: Deploy CDK stack to Prod
+        run: npx cdk deploy --require-approval never --context env=prod
