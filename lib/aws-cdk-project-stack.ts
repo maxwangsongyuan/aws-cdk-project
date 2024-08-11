@@ -12,7 +12,7 @@ export class AwsCdkProjectStack extends cdk.Stack {
 
     // Generate the current date and time
     const now = new Date();
-    const dateString = now.toISOString().replace(/[:\-]/g, '').replace(/\..+/, '');
+    const dateString = now.toISOString().replace(/[:\-]/g, '').replace(/\..+/, '').toLowerCase();
 
     // Define the S3 bucket with a unique name
     new s3.Bucket(this, 'MyBucket', {
