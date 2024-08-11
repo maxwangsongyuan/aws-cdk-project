@@ -53,6 +53,12 @@ export class AwsCdkProjectStack extends cdk.Stack {
         resources: ['arn:aws:s3:::lambda-output-bucket-864899851256-us-west-2/*'],
       }),
     );
+    lambdaRole.addToPolicy(
+      new PolicyStatement({
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: ['*'],
+      }),
+    );
 
     // Create Lambda function
     const lambdaFunction = new Function(this, 'LambdaFunction', {
@@ -93,10 +99,68 @@ def lambda_handler(event, context):
       timeout: Duration.minutes(15),
     });
 
+    // Create SES Lambda function
+    const sesLambdaFunction = new Function(this, 'SesLambdaFunction', {
+      runtime: Runtime.PYTHON_3_9,
+      description: 'SES lambda function',
+      handler: 'index.handler',
+      code: Code.fromInline(`
+        import boto3
+        import json
+        import os
+
+        def handler(event, context):
+            ses = boto3.client('ses')
+            subject = "Leetcode Status Report on " + event['year-date-month']
+            body = event['lambda_output']
+
+            response = ses.send_email(
+                Source=os.environ['SES_SOURCE_EMAIL'],
+                Destination={
+                    'ToAddresses': [os.environ['SES_DESTINATION_EMAIL']],
+                },
+                Message={
+                    'Subject': {
+                        'Data': subject
+                    },
+                    'Body': {
+                        'Text': {
+                            'Data': body
+                        }
+                    }
+                }
+            )
+
+            return {
+                'statusCode': 200,
+                'body': json.dumps(response)
+            }
+      `),
+      role: lambdaRole,
+      logRetention: RetentionDays.ONE_MONTH,
+      memorySize: 1024,
+      timeout: Duration.minutes(5),
+      environment: {
+        SES_SOURCE_EMAIL: 'songyuanwangcode@gmail.com', // replace with your SES verified email, go to aws console, go to SES service, on the left panel, 
+                                                        //click on identities under Configuration, and create a new identity
+        SES_DESTINATION_EMAIL: 'songyuanwangcode@gmail.com' // replace with your destination email
+      }
+    });
+
     // Create Step Function and define the Lambda invocation state using dynamic input parameters
     const lambdaInvoke = new LambdaInvoke(this, 'InvokeLambdaStep', {
       lambdaFunction,
       payload: TaskInput.fromObject({}),
+      outputPath: '$.Payload',
+    });
+
+    // SES Lambda invocation state
+    const sesLambdaInvoke = new LambdaInvoke(this, 'InvokeSesLambdaStep', {
+      lambdaFunction: sesLambdaFunction,
+      payload: TaskInput.fromObject({
+        'lambda_output': TaskInput.fromJsonPathAt('$'),
+        'year-date-month': TaskInput.fromJsonPathAt('$.year-date-month')
+      }),
       outputPath: '$.Payload',
     });
 
@@ -111,7 +175,7 @@ def lambda_handler(event, context):
 
     // Decision state to check the result of the Lambda function
     const decisionState = new Choice(this, 'DecisionState')
-      .when(Condition.numberEquals('$.statusCode', 200), successState)
+      .when(Condition.numberEquals('$.statusCode', 200), sesLambdaInvoke.next(successState))
       .otherwise(failureState);
 
     // Define the workflow with error handling
