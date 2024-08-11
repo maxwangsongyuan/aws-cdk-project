@@ -1,6 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-
 import { Duration, RemovalPolicy, StackProps } from 'aws-cdk-lib';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -8,7 +7,7 @@ import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-
 import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
 
 export class AwsCdkProjectStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
     // Create a unique bucket name using account ID, region, and date-time
@@ -19,12 +18,15 @@ export class AwsCdkProjectStack extends cdk.Stack {
     const now = new Date();
     const dateString = now.toISOString().replace(/[:\-]/g, '').replace(/\..+/, '').toLowerCase();
 
-    // Define the S3 bucket with a unique name
+    // Define the bucket name
+    const bucketName = `lambda-output-bucket-${account}-${region}`;
+
+    // Define the S3 bucket
     const bucket = new Bucket(this, 'LambdaOutputBucket', {
-      bucketName: `lambda-output-bucket-${account}-${region}-${dateString}`,
+      bucketName: bucketName,
       versioned: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // Automatically delete the bucket when the stack is deleted
-      autoDeleteObjects: true, // Automatically delete all objects in the bucket when the stack is deleted
+      removalPolicy: RemovalPolicy.RETAIN, // Automatically delete the bucket when the stack is deleted
+      autoDeleteObjects: false, // Automatically delete all objects in the bucket when the stack is deleted
     });
 
     // Create IAM Role for Lambda
@@ -38,36 +40,31 @@ export class AwsCdkProjectStack extends cdk.Stack {
     lambdaRole.addToPolicy(
       new PolicyStatement({
         actions: ['s3:PutObject', 's3:GetObject', 's3:ListBucket'],
-        resources: [`${bucket.bucketArn}`],
+        resources: [`arn:aws:s3:::${bucketName}`],
       }),
     );
     lambdaRole.addToPolicy(
       new PolicyStatement({
         actions: ['s3:PutObject', 's3:GetObject', 's3:ListBucket'],
-        resources: [`${bucket.bucketArn}/*`],
+        resources: [`arn:aws:s3:::${bucketName}/*`],
       }),
     );
 
     // Create Lambda function
-    const lambdaFunction = new Function(
-      this,
-      'LambdaFunction',
-      {
-        runtime: Runtime.PYTHON_3_12,
-        description: 'lambda function',
-        handler: 'index.handler',
-        code: Code.fromInline(`
-          exports.handler = async function(event) {
-            console.log("event:", event);
-            return {};
-          };
-        `),
-        role: lambdaRole,
-        logRetention: RetentionDays.ONE_MONTH,
-        memorySize: 1024,
-        timeout: Duration.minutes(15),
-      },
-    );
-
+    new Function(this, 'LambdaFunction', {
+      runtime: Runtime.PYTHON_3_9,
+      description: 'lambda function',
+      handler: 'index.handler',
+      code: Code.fromInline(`
+        exports.handler = async function(event) {
+          console.log("event:", event);
+          return {};
+        };
+      `),
+      role: lambdaRole,
+      logRetention: RetentionDays.ONE_MONTH,
+      memorySize: 1024,
+      timeout: Duration.minutes(15),
+    });
   }
 }
