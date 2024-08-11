@@ -13,26 +13,26 @@ export class AwsCdkProjectStack extends cdk.Stack {
     // Create a unique bucket name using account ID, region, and date-time
     const account = cdk.Stack.of(this).account;
     const region = cdk.Stack.of(this).region;
-
-    // Generate the current date and time
-    const now = new Date();
-    const dateString = now.toISOString().replace(/[:\-]/g, '').replace(/\..+/, '').toLowerCase();
-
-    // Define the bucket name
-    const bucketName = `lambda-output-bucket-${account}-${region}`;
-
-    // Define the S3 bucket
-    const bucket = new Bucket(this, 'LambdaOutputBucket', {
-      bucketName: bucketName,
-      versioned: true,
-      removalPolicy: RemovalPolicy.RETAIN, // Automatically delete the bucket when the stack is deleted
-      autoDeleteObjects: false, // Automatically delete all objects in the bucket when the stack is deleted
-    });
+//
+//     // Generate the current date and time
+//     const now = new Date();
+//     const dateString = now.toISOString().replace(/[:\-]/g, '').replace(/\..+/, '').toLowerCase();
+//
+//     // Define the bucket name
+//     const bucketName = `lambda-output-bucket-${account}-${region}`;
+//
+//     // Define the S3 bucket
+//     const bucket = new Bucket(this, 'LambdaOutputBucket', {
+//       bucketName: bucketName,
+//       versioned: true,
+//       removalPolicy: RemovalPolicy.RETAIN, // Automatically delete the bucket when the stack is deleted
+//       autoDeleteObjects: false, // Automatically delete all objects in the bucket when the stack is deleted
+//     });
 
     // Create IAM Role for Lambda
     const lambdaRole = new Role(this, `LambdaExecutionRole`, {
       assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
-      roleName: `lambda-iam-role-${account}-${region}-${dateString}`,
+      roleName: `lambda-iam-role-${account}-${region}`,
     });
 
     // Attach policies to the Lambda role
@@ -40,13 +40,13 @@ export class AwsCdkProjectStack extends cdk.Stack {
     lambdaRole.addToPolicy(
       new PolicyStatement({
         actions: ['s3:PutObject', 's3:GetObject', 's3:ListBucket'],
-        resources: [`arn:aws:s3:::${bucketName}`],
+        resources: ['arn:aws:s3:::lambda-output-bucket-864899851256-us-west-2'],
       }),
     );
     lambdaRole.addToPolicy(
       new PolicyStatement({
         actions: ['s3:PutObject', 's3:GetObject', 's3:ListBucket'],
-        resources: [`arn:aws:s3:::${bucketName}/*`],
+        resources: ['arn:aws:s3:::lambda-output-bucket-864899851256-us-west-2/*'],
       }),
     );
 
