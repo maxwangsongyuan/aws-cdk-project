@@ -5,6 +5,10 @@ import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { ManagedPolicy, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
+import { SfnStateMachine } from 'aws-cdk-lib/aws-events-targets';
+import { Choice, Condition, Fail, StateMachine, Succeed, TaskInput } from 'aws-cdk-lib/aws-stepfunctions';
+import { LambdaInvoke } from 'aws-cdk-lib/aws-stepfunctions-tasks';
+import { Rule, Schedule } from 'aws-cdk-lib/aws-events';
 
 export class AwsCdkProjectStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -51,7 +55,7 @@ export class AwsCdkProjectStack extends cdk.Stack {
     );
 
     // Create Lambda function
-    new Function(this, 'LambdaFunction', {
+    const lambdaFunction = new Function(this, 'LambdaFunction', {
       runtime: Runtime.PYTHON_3_9,
       description: 'lambda function',
       handler: 'index.handler',
@@ -65,6 +69,42 @@ export class AwsCdkProjectStack extends cdk.Stack {
       logRetention: RetentionDays.ONE_MONTH,
       memorySize: 1024,
       timeout: Duration.minutes(15),
+    });
+
+    // Create Step Function and define the Lambda invocation state using dynamic input parameters
+    const lambdaInvoke = new LambdaInvoke(this, 'InvokeLambdaStep', {
+      lambdaFunction,
+      payload: TaskInput.fromObject({}),
+      outputPath: '$.Payload',
+    });
+
+    // Define a success state
+    const successState = new Succeed(this, 'SuccessState');
+
+    // Define a failure state
+    const failureState = new Fail(this, 'FailureState', {
+      cause: 'Lambda function invocation failed or query failed',
+      error: 'Invoke error or Query error',
+    });
+
+    // Decision state to check the result of the Lambda function
+    const decisionState = new Choice(this, 'DecisionState')
+      .when(Condition.numberEquals('$.statusCode', 200), successState)
+      .otherwise(failureState);
+
+    // Define the workflow with error handling
+    const definition = lambdaInvoke.addCatch(failureState, { resultPath: '$.error-info' }).next(decisionState);
+
+    // Create the state machine with the defined workflow
+    const stateMachine = new StateMachine(this, 'StateMachine', {
+      stateMachineName: `LambdaInvocationStateMachine-${account}-${region}`,
+      definition,
+    });
+
+    // Create EventBridge rule to trigger the Step Function
+    new Rule(this, 'DailyTriggerRule', {
+      schedule: Schedule.cron({ minute: '0', hour: '13', weekDay: 'MON-SUN' }),
+      targets: [new SfnStateMachine(stateMachine)],
     });
   }
 }
