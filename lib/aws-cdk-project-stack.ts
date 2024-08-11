@@ -63,7 +63,9 @@ export class AwsCdkProjectStack extends cdk.Stack {
     // Create Lambda Layer from the ZIP file in S3, which includes the requests library
     // This is done manually by uploading the ZIP file to a S3 bucket
     const lambdaLayer = new LayerVersion(this, 'RequestsLayer', {
-      code: Code.fromBucket(Bucket.fromBucketName(this, 'LayerBucket', 'cdk-project-lambda-layer-zip-files'), 'requests_layer.zip'),
+      code: Code.fromBucket(Bucket.fromBucketName(this, 'LayerBucket',
+      'cdk-project-lambda-layer-zip-files'), //replace 'cdk-project-lambda-layer-zip-files' with your bucket name
+      'requests_layer.zip'), //replace 'requests_layer.zip' with your file name
       compatibleRuntimes: [Runtime.PYTHON_3_12],
       description: 'A layer to include requests library',
     });
@@ -151,8 +153,7 @@ def handler(event, context):
       memorySize: 1024,
       timeout: Duration.minutes(5),
       environment: {
-        SES_SOURCE_EMAIL: 'songyuanwangcode@gmail.com', // replace with your SES verified email, go to aws console, go to SES service, on the left panel, 
-                                                        //click on identities under Configuration, and create a new identity
+        SES_SOURCE_EMAIL: 'songyuanwangcode@gmail.com', // replace with your SES verified email
         SES_DESTINATION_EMAIL: 'songyuanwangcode@gmail.com' // replace with your destination email
       }
     });

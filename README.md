@@ -2,11 +2,13 @@
 
 currently automatically deploying to 2 regions: us-east-1 and us-west-2
 
-To-Do: 
-create gamma and prod stages. This typically involves defining separate jobs or workflows for each environment and using different configurations, such as different AWS accounts, regions, or CDK context variables.
+Must-Dos:
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
-
+1. Create Lambda Layer from the ZIP file in S3, which includes the requests library
+. This is done manually by uploading the ZIP file to a S3 bucket
+2. In deploy.yml, you will see ${{ secrets.AWS_ACCESS_KEY_ID_GAMMA }}, ${{ secrets.AWS_SECRET_ACCESS_KEY_GAMMA }}. this secrets need to be added in the github repository. Go to repository settings -> secrets and variables (left panel) -> action -> new repository secret
+3. Replace with your SES verified email and. Go to aws console, go to SES service, on the left panel,
+   click on identities under Configuration, and create a new identity
 ## Useful commands
 
 * `npm run build`   compile typescript to js
