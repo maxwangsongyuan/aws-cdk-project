@@ -1,5 +1,9 @@
 # A CDK project that notifies users about their LeetCode progress via email. Utilized Github Action to create an automated deployment pipeline
 
+This is a sample email you will receive:
+![Screenshot 2024-08-11 at 3 22 14 PM](https://github.com/user-attachments/assets/2c69aca1-a9fa-425d-97b2-8758556753d8)
+
+
 currently automatically deploying to 2 regions: us-west-2. You can uncomment the deploy.yaml to deploy to more prod stages/regions
 
 Must-Dos before running the project:
