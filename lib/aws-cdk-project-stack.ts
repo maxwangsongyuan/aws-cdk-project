@@ -72,7 +72,7 @@ export class AwsCdkProjectStack extends cdk.Stack {
     const lambdaFunction = new Function(this, 'LambdaFunction', {
       runtime: Runtime.PYTHON_3_12,
       description: 'lambda function',
-      handler: 'index.handler',
+      handler: 'index.lambda_handler',
       code: Code.fromInline(
       `
 import json
@@ -122,7 +122,7 @@ import os
 def handler(event, context):
     ses = boto3.client('ses')
     subject = "Leetcode Status Report on " + event['yearDateMonth']
-    body = event['lambda_output']
+    body = json.dumps(event['lambda_output'], indent=2)  # Ensure the body is a string
 
     response = ses.send_email(
         Source=os.environ['SES_SOURCE_EMAIL'],
