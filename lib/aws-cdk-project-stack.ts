@@ -59,11 +59,33 @@ export class AwsCdkProjectStack extends cdk.Stack {
       runtime: Runtime.PYTHON_3_9,
       description: 'lambda function',
       handler: 'index.handler',
-      code: Code.fromInline(`
-        exports.handler = async function(event) {
-          console.log("event:", event);
-          return {};
-        };
+      code: Code.fromInline(
+      `
+import json
+import requests
+
+def lambda_handler(event, context):
+    # Define the base URL for the API
+    base_url = "https://leetcode-stats-api.herokuapp.com"
+
+    # Specify the LeetCode username
+    username = "maxwsy"
+
+    # Make a request to fetch user statistics
+    response = requests.get(f"{base_url}/{username}")
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        stats = response.json()
+        return {
+            'statusCode': 200,
+            'body': json.dumps(stats)
+        }
+    else:
+        return {
+            'statusCode': response.status_code,
+            'body': json.dumps({'error': 'Failed to fetch statistics'})
+        }
       `),
       role: lambdaRole,
       logRetention: RetentionDays.ONE_MONTH,
