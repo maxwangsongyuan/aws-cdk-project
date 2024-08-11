@@ -53,8 +53,8 @@ export class AwsCdkProjectStack extends cdk.Stack {
     // This is done manually by uploading the ZIP file to a S3 bucket
     const lambdaLayer = new LayerVersion(this, 'RequestsLayer', {
       code: Code.fromBucket(Bucket.fromBucketName(this, 'LayerBucket',
-      'cdk-project-lambda-layer-zip-files'), //replace 'cdk-project-lambda-layer-zip-files' with your bucket name
-      'requests_layer.zip'), //replace 'requests_layer.zip' with your file name
+      'cdk-project-lambda-layer-zip-files'), //TODO: replace 'cdk-project-lambda-layer-zip-files' with your bucket name
+      'requests_layer.zip'), //TODO: replace 'requests_layer.zip' with your file name
       compatibleRuntimes: [Runtime.PYTHON_3_12],
       description: 'A layer to include requests library',
     });
@@ -83,8 +83,8 @@ export class AwsCdkProjectStack extends cdk.Stack {
       memorySize: 1024,
       timeout: Duration.minutes(5),
       environment: {
-        SES_SOURCE_EMAIL: 'songyuanwangcode@gmail.com', // replace with your SES verified email
-        SES_DESTINATION_EMAIL: 'songyuanwangcode@gmail.com' // replace with your destination email
+        SES_SOURCE_EMAIL: 'songyuanwangcode@gmail.com', // TODO: replace with your SES verified email
+        SES_DESTINATION_EMAIL: 'songyuanwangcode@gmail.com' // TODO: replace with your destination email
       }
     });
 

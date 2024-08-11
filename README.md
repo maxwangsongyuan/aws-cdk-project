@@ -9,7 +9,7 @@ This is the design diagram:
 
 currently automatically deploying to 2 regions: us-west-2. You can uncomment the deploy.yaml to deploy to more prod stages/regions
 
-Must-Dos before running the project:
+Must-Dos before running the project (search for TODO in the code):
 
 1. Create a Lambda Layer from the ZIP file in S3, which includes the requests library
 . This is done manually by uploading the ZIP file to a S3 bucket  :  [requests_layer.zip](https://github.com/user-attachments/files/16576243/requests_layer.zip)

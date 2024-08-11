@@ -3,10 +3,10 @@ import requests
 
 def lambda_handler(event, context):
     # Define the base URL for the API
-    base_url = "https://alfa-leetcode-api.onrender.com"
+    base_url = "https://alfa-leetcode-api.onrender.com" #specical thanks to https://github.com/alfaarghya/alfa-leetcode-api
 
     # Specify the LeetCode username
-    username = "maxwsy"
+    username = "maxwsy" #TODO: Change this to your LeetCode username
 
     # Make a request to fetch user statistics (latest 10 submissions)
     submission_response = requests.get(f"{base_url}/{username}/acSubmission?limit=10")
