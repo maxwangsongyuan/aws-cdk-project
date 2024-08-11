@@ -1,6 +1,9 @@
-# Welcome to your CDK TypeScript project
+# A cdk project with automated deployment pipeline
 
-This is a blank project for CDK development with TypeScript.
+currently automatically deploying to 2 regions: us-east-1 and us-west-2
+
+To-Do: 
+create gamma and prod stages. This typically involves defining separate jobs or workflows for each environment and using different configurations, such as different AWS accounts, regions, or CDK context variables.
 
 The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
