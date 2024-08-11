@@ -121,13 +121,8 @@ import os
 
 def handler(event, context):
     ses = boto3.client('ses')
-
-    # Extract and parse the lambda_output and yearDateMonth from the event
-    lambda_output = json.loads(event['body'])  # Parse the JSON string
-    yearDateMonth = lambda_output['yearDateMonth']
-
-    subject = "Leetcode Status Report on " + yearDateMonth
-    body = json.dumps(lambda_output, indent=4)  # Format the body as a JSON string for readability
+    subject = "Leetcode Status Report on " + event['yearDateMonth']
+    body = event['lambda_output']
 
     response = ses.send_email(
         Source=os.environ['SES_SOURCE_EMAIL'],
