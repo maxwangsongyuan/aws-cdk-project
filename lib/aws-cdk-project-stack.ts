@@ -13,5 +13,12 @@ export class AwsCdkProjectStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Automatically delete the bucket when the stack is deleted
       autoDeleteObjects: true, // Automatically delete all objects in the bucket when the stack is deleted
     });
+
+    new s3.Bucket(this, 'MyBucket2', {
+      bucketName: 'test-github-action',
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // Automatically delete the bucket when the stack is deleted
+      autoDeleteObjects: true, // Automatically delete all objects in the bucket when the stack is deleted
+    });
   }
 }
