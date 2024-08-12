@@ -55,3 +55,7 @@ Default output format [None]: json
 * `npx cdk diff`    compare deployed stack with current state
 * `npx cdk synth`   emits the synthesized CloudFormation template
 
+---
+
+special mention: thanks to this useful API provided in https://github.com/alfaarghya/alfa-leetcode-api 
+i don't see leetcode's graphql. It's removed.
