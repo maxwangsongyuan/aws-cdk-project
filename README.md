@@ -1,4 +1,15 @@
 # A CDK project that notifies users about their LeetCode progress via email. Utilized Github Action to create an automated deployment pipeline
+```
+LeetCode Progress Tracker
+
+Technologies Used: AWS S3, AWS SES, AWS Eventbridge, AWS Step Function, AWS Lambda, AWS CDK, Python, TypeScript, Requests Library, JSON
+
+• Developed a serverless application using AWS Lambda to track and retrieve user progress on LeetCode, integrating with a third-party API to gather real-time data on LeetCode problem-solving activities.
+• Architected the solution with AWS CDK, defining the infrastructure as code to automate the deployment of AWS resources, including S3 buckets for data storage, Lambda functions for processing, and SES and Eventbridge for sending daily emails.
+• Implemented a Python-based Lambda function that fetches the latest 10 submissions and the overall solved question summary for a specified LeetCode user, returning the data as a JSON object.
+• Demonstrated strong proficiency in cloud-based serverless architecture, API integration, and Python scripting, contributing to the seamless delivery of an automated tracking tool for coding practice.
+```
+
 
 This is a sample email you will receive:
 ![Screenshot 2024-08-11 at 3 22 14 PM](https://github.com/user-attachments/assets/2c69aca1-a9fa-425d-97b2-8758556753d8)
